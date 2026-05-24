@@ -584,7 +584,6 @@
 
 <script>
 const CONFIG = {
-  token: 'patIck2U5hSyjFQPL.323b97d216b63d98f3870092e24c41b69627302c09b6d682a19d794c4dc0cd2d',
   jobPipelineBase: 'appMCUWlHBJ3AAb98',
   fields: {
     name: 'Customer Name/Job',
@@ -626,10 +625,8 @@ async function loadJobs() {
   list.innerHTML = '<div class="loading-jobs">Loading...</div>';
 
   try {
-    const url = `https://api.airtable.com/v0/${CONFIG.jobPipelineBase}/Job%20Pipeline?pageSize=50&sort[0][field]=${encodeURIComponent(CONFIG.fields.name)}&sort[0][direction]=asc`;
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${CONFIG.token}` }
-    });
+    const url = `/api/airtable?base=${CONFIG.jobPipelineBase}&table=Job Pipeline&pageSize=50&sortField=${encodeURIComponent(CONFIG.fields.name)}&sortDir=asc`;
+    const res = await fetch(url);
 
     if (!res.ok) throw new Error(`${res.status}`);
     const data = await res.json();
@@ -1071,15 +1068,10 @@ async function generateDoc() {
 async function updateAirtableRecord(recordId, docType) {
   try {
     const newStatus = docType === 'contract' ? 'Job Accepted (Needs Scheduling)' : 'Estimate Conducted';
-    await fetch(`https://api.airtable.com/v0/${CONFIG.jobPipelineBase}/Job%20Pipeline/${recordId}`, {
+    await fetch(`/api/airtable?base=${CONFIG.jobPipelineBase}&table=Job Pipeline&recordId=${recordId}`, {
       method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${CONFIG.token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        fields: { [CONFIG.fields.status]: newStatus }
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { [CONFIG.fields.status]: newStatus } })
     });
   } catch(e) {
     console.warn('Could not update Airtable record:', e);
