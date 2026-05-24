@@ -585,6 +585,7 @@
 <script>
 const CONFIG = {
   jobPipelineBase: 'appMCUWlHBJ3AAb98',
+  jobPipelineTable: 'Guardian Work Picture',
   fields: {
     name: 'Customer Name/Job',
     email: 'Customer Email',
@@ -625,7 +626,7 @@ async function loadJobs() {
   list.innerHTML = '<div class="loading-jobs">Loading...</div>';
 
   try {
-    const url = `/api/airtable?base=${CONFIG.jobPipelineBase}&table=Job Pipeline&pageSize=50&sortField=${encodeURIComponent(CONFIG.fields.name)}&sortDir=asc`;
+    const url = `/api/airtable?base=${CONFIG.jobPipelineBase}&table=${encodeURIComponent(CONFIG.jobPipelineTable)}&pageSize=50&sortField=${encodeURIComponent(CONFIG.fields.name)}&sortDir=asc`;
     const res = await fetch(url);
 
     if (!res.ok) throw new Error(`${res.status}`);
@@ -1068,7 +1069,7 @@ async function generateDoc() {
 async function updateAirtableRecord(recordId, docType) {
   try {
     const newStatus = docType === 'contract' ? 'Job Accepted (Needs Scheduling)' : 'Estimate Conducted';
-    await fetch(`/api/airtable?base=${CONFIG.jobPipelineBase}&table=Job Pipeline&recordId=${recordId}`, {
+    await fetch(`/api/airtable?base=${CONFIG.jobPipelineBase}&table=${encodeURIComponent(CONFIG.jobPipelineTable)}&recordId=${recordId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields: { [CONFIG.fields.status]: newStatus } })
