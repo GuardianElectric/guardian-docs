@@ -547,8 +547,18 @@
 
     <div class="totals-block">
       <div class="total-row">
-        <span>Subtotal</span>
+        <span>Labor subtotal</span>
         <span id="subtotalDisplay">$0.00</span>
+      </div>
+      <div class="total-row" style="align-items:center;">
+        <span>Materials cost</span>
+        <input type="number" id="materialsCost" placeholder="0.00" step="0.01" min="0"
+          oninput="updateTotals()"
+          style="background:var(--surface2,#222);border:1px solid var(--border2,#333);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;width:110px;text-align:right;padding:4px 8px;outline:none;margin-left:auto;">
+      </div>
+      <div class="total-row" id="materialsChargeRow" style="display:none;">
+        <span style="color:var(--text2);font-size:12px;">Materials to customer (tax&nbsp;+&nbsp;15%)</span>
+        <span id="materialsChargeDisplay" style="font-family:'DM Mono',monospace;min-width:90px;text-align:right;color:var(--text2);font-size:12px;"></span>
       </div>
       <div class="total-row grand">
         <span>Total</span>
@@ -772,9 +782,22 @@ function getTotalAmount() {
 }
 
 function updateTotals() {
-  const total = getTotalAmount();
-  document.getElementById('subtotalDisplay').textContent = `$${total.toLocaleString('en-US', {minimumFractionDigits:2})}`;
-  document.getElementById('totalDisplay').textContent = `$${total.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+  const laborTotal = getTotalAmount();
+  const matCost = parseFloat(document.getElementById('materialsCost').value) || 0;
+  const matCharge = matCost > 0 ? matCost * 1.06625 * 1.15 : 0;
+  const grandTotal = laborTotal + matCharge;
+
+  document.getElementById('subtotalDisplay').textContent = `$${laborTotal.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+
+  const matRow = document.getElementById('materialsChargeRow');
+  if (matCharge > 0) {
+    matRow.style.display = 'flex';
+    document.getElementById('materialsChargeDisplay').textContent = `$${matCharge.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+  } else {
+    matRow.style.display = 'none';
+  }
+
+  document.getElementById('totalDisplay').textContent = `$${grandTotal.toLocaleString('en-US', {minimumFractionDigits:2})}`;
   updateDepositBalance();
 }
 
@@ -809,7 +832,10 @@ function buildPDF() {
   const docNum = document.getElementById('docNumber').value;
   const customer = getCustomerInfo();
   const items = getLineItems();
-  const total = getTotalAmount();
+  const laborTotal = getTotalAmount();
+  const matCost = parseFloat(document.getElementById('materialsCost').value) || 0;
+  const matCharge = matCost > 0 ? matCost * 1.06625 * 1.15 : 0;
+  const total = laborTotal + matCharge;
   const depositAmt = parseFloat(document.getElementById('depositAmt').value) || 0;
   const balanceAmt = parseFloat(document.getElementById('balanceAmt').value) || 0;
   const contractNotes = document.getElementById('contractNotes').value;
@@ -923,10 +949,21 @@ function buildPDF() {
   // Total block
   const totalBlockX = W - margin - 200;
 
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...gray);
+
+  if (matCharge > 0) {
+    doc.text('Labor subtotal:', totalBlockX, y);
+    doc.text(`$${laborTotal.toLocaleString('en-US', {minimumFractionDigits:2})}`, W - margin, y, { align: 'right' });
+    y += 16;
+
+    doc.text('Materials (tax + 15%):', totalBlockX, y);
+    doc.text(`$${matCharge.toLocaleString('en-US', {minimumFractionDigits:2})}`, W - margin, y, { align: 'right' });
+    y += 16;
+  }
+
   if (docType === 'contract' && depositAmt > 0) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(...gray);
     doc.text('Contract Total:', totalBlockX, y);
     doc.text(`$${total.toLocaleString('en-US', {minimumFractionDigits:2})}`, W - margin, y, { align: 'right' });
     y += 16;
